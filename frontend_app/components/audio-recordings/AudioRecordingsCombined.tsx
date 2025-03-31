@@ -58,20 +58,44 @@ export function AudioRecordingsCombined({ initialFilters }: { initialFilters: Fi
     defaultValues: { ...initialFilters, created_at: "" },
   });
 
+  const safeGetLocalStorage = (key: string) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.error('Error accessing localStorage:', e);
+      return null;
+    }
+  };
+
+  const safeSetLocalStorage = (key: string, value: string) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.error('Error setting localStorage:', e);
+    }
+  };
+
   const fetchJobData = useCallback(
     async (forceRefresh = false, filters?: FilterValues) => {
       if (!forceRefresh) {
-        const cachedJobs = localStorage.getItem("cachedJobs");
+        const cachedJobs = safeGetLocalStorage("cachedJobs");
         if (cachedJobs) {
-          setAudioRecordings(JSON.parse(cachedJobs));
-          setIsLoading(false);
-          return;
+          try {
+            setAudioRecordings(JSON.parse(cachedJobs));
+            setIsLoading(false);
+            return;
+          } catch (e) {
+            console.error('Error parsing cached jobs:', e);
+            // Continue to fetch from API
+          }
         }
       }
 
       setIsLoading(true);
       try {
-        const token = localStorage.getItem("token");
+        const token = safeGetLocalStorage("token");
         if (!token) throw new Error("No authentication token found. Please log in again.");
 
         const params = new URLSearchParams({
@@ -92,9 +116,14 @@ export function AudioRecordingsCombined({ initialFilters }: { initialFilters: Fi
 
         const data = await response.json();
         setAudioRecordings(data.jobs || []);
-        localStorage.setItem("cachedJobs", JSON.stringify(data.jobs || []));
+        safeSetLocalStorage("cachedJobs", JSON.stringify(data.jobs || []));
       } catch (error) {
         console.error("Error fetching audio recordings:", error);
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('An unknown error occurred');
+        }
       } finally {
         setIsLoading(false);
       }

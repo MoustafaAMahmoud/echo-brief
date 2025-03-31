@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove or comment out the output: 'export' line
-  // output: 'export',
+  // Remove the output: 'export' line completely to use SSR instead
   reactStrictMode: true,
 }
 
