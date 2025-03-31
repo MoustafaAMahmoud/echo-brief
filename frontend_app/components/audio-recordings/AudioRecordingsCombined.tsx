@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ViewDetailsDialog } from "./view-details-dialog";
+import { useRouter } from "next/navigation";
 
 const statusEnum = z.enum(["all", "uploaded", "processing", "completed", "failed"]);
 
@@ -50,6 +51,7 @@ export function AudioRecordingsCombined({ initialFilters }: { initialFilters: Fi
   const [selectedRecording, setSelectedRecording] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const hasFetchedData = useRef(false);
+  const router = useRouter();
 
   const form = useForm<FilterValues>({
     resolver: zodResolver(filterSchema),
@@ -235,7 +237,9 @@ export function AudioRecordingsCombined({ initialFilters }: { initialFilters: Fi
                 paginatedData.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{row.id}</TableCell>
-                    <TableCell className="text-blue-500 font-medium">{row.file_name}</TableCell>
+                    <TableCell className="text-blue-500 font-medium">
+                      {row.file_name || row.file_path.split('/').pop() || 'Unnamed Recording'}
+                    </TableCell>
                     <TableCell>
                       <Badge className={cn("px-4 py-1 text-xs rounded-md min-w-[100px] flex items-center justify-center", statusVariants[row.status] || statusVariants.default)}>
                         {row.status}
@@ -254,8 +258,7 @@ export function AudioRecordingsCombined({ initialFilters }: { initialFilters: Fi
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => {
-                              setSelectedRecording(row);
-                              setIsDialogOpen(true);
+                              router.push(`/audio-recordings/${row.id}`);
                             }}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details

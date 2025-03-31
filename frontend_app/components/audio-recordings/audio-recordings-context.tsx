@@ -67,7 +67,12 @@ export function AudioRecordingsProvider({ children }: { children: React.ReactNod
       setAudioRecordings(data.jobs || []);
     } catch (error) {
       console.error('Error fetching audio recordings:', error);
-      setError(error.message);
+      
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     }
   }, []);
 
