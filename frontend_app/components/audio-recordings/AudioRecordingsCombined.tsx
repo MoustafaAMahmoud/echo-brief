@@ -287,7 +287,22 @@ export function AudioRecordingsCombined({ initialFilters }: { initialFilters: Fi
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => {
-                              router.push(`/audio-recordings/${row.id}`);
+                              // For static export, we need to use one of our pre-generated paths
+                              // In a real app with SSR, you would use the actual row.id
+                              
+                              // Check if this is one of our pre-generated paths
+                              const isPlaceholder = row.id.startsWith('job_placeholder_');
+                              
+                              if (isPlaceholder) {
+                                router.push(`/audio-recordings/${row.id}`);
+                              } else {
+                                // If not a placeholder, route to the first placeholder ID but store the real ID in localStorage
+                                // for client-side fetching once the page loads
+                                if (typeof window !== 'undefined') {
+                                  localStorage.setItem('current_recording_id', row.id);
+                                }
+                                router.push(`/audio-recordings/job_placeholder_123456789`);
+                              }
                             }}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details

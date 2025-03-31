@@ -15,12 +15,41 @@ export function RecordingDetailsPageWrapper({ id }: RecordingDetailsPageWrapperP
   const [recording, setRecording] = useState<AudioRecording | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Helper function to safely access localStorage
+  const safeGetLocalStorage = (key: string) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.error("Error accessing localStorage:", e);
+      return null;
+    }
+  };
+
+  // First, check if we're running on the client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
+    if (!isClient) return; // Skip data fetching during static generation
+    
+    // For static export, check if we have a current_recording_id in localStorage
+    // This would mean we're viewing a real recording through a placeholder route
+    const currentRecordingId = safeGetLocalStorage("current_recording_id");
+    const actualId = currentRecordingId || id; // Use the stored ID or the route ID
+    
+    // Clear the current_recording_id from localStorage
+    if (currentRecordingId && typeof window !== 'undefined') {
+      localStorage.removeItem("current_recording_id");
+    }
+    
     // Function to fetch a single recording by ID from the API
     const fetchRecordingById = async (recordingId: string) => {
       try {
-        const token = localStorage.getItem("token");
+        const token = safeGetLocalStorage("token");
         if (!token) {
           throw new Error("Authentication required");
         }
@@ -50,11 +79,11 @@ export function RecordingDetailsPageWrapper({ id }: RecordingDetailsPageWrapperP
     const getRecordingFromCache = () => {
       try {
         // Try to get the recording from the cached data
-        const cachedJobs = localStorage.getItem("cachedJobs");
+        const cachedJobs = safeGetLocalStorage("cachedJobs");
         
         if (cachedJobs) {
           const jobs = JSON.parse(cachedJobs) as AudioRecording[];
-          const job = jobs.find((job: AudioRecording) => job.id === id);
+          const job = jobs.find((job: AudioRecording) => job.id === actualId);
           
           if (job) {
             setRecording(job);
@@ -64,7 +93,7 @@ export function RecordingDetailsPageWrapper({ id }: RecordingDetailsPageWrapperP
         }
         return false;
       } catch (e) {
-        console.error("Error accessing localStorage:", e);
+        console.error("Error parsing cached jobs:", e);
         return false;
       }
     };
@@ -75,7 +104,7 @@ export function RecordingDetailsPageWrapper({ id }: RecordingDetailsPageWrapperP
       if (foundInCache) return;
 
       // If not in cache, try from API
-      const foundFromApi = await fetchRecordingById(id);
+      const foundFromApi = await fetchRecordingById(actualId);
       if (foundFromApi) return;
 
       // If we've reached here, we couldn't find the recording
@@ -89,7 +118,12 @@ export function RecordingDetailsPageWrapper({ id }: RecordingDetailsPageWrapperP
     };
 
     loadRecording();
-  }, [id, router]);
+  }, [id, router, isClient]);
+
+  // For static generation, show a skeleton loading state
+  if (!isClient) {
+    return <div className="container mx-auto py-6 px-4">Loading recording details...</div>;
+  }
 
   if (isLoading) {
     return <div className="container mx-auto py-6 px-4">Loading recording details...</div>;

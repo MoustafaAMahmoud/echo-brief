@@ -8,35 +8,41 @@ import { RecordingDetailsPageWrapper } from "@/components/audio-recordings/recor
  * with dynamically created audio recording IDs, we provide placeholder IDs here
  * to satisfy this requirement.
  * 
- * The IDs listed here will be pre-rendered at build time. For all other IDs,
- * the pages will be generated on-demand at runtime thanks to the `dynamicParams: true`
- * configuration.
- * 
- * In a production environment, you might want to replace these placeholder IDs
- * with your most frequently accessed recording IDs for better performance.
+ * For a static export, we need to pre-generate a set of placeholder routes.
+ * In a real production environment, you would replace these with actual IDs
+ * from your database or API.
  */
 export async function generateStaticParams() {
+  // For static export, we'll generate a set of placeholder IDs
+  // In a real app, you could fetch actual IDs from your API at build time
   return [
-    // Placeholder ID for static export requirements
     { id: 'job_placeholder_123456789' },
-    
-    // You can add more frequently accessed IDs here
-    // { id: 'job_1743038577396' },
-    // { id: 'job_1743038509158' },
+    { id: 'job_placeholder_987654321' },
+    { id: 'job_placeholder_135792468' },
+    { id: 'job_placeholder_246813579' },
+    { id: 'job_placeholder_111222333' },
+    { id: 'job_placeholder_444555666' },
+    { id: 'job_placeholder_777888999' },
+    { id: 'job_placeholder_123123123' },
+    { id: 'job_placeholder_456456456' },
+    { id: 'job_placeholder_789789789' },
   ];
 }
 
 /**
- * Enable dynamic parameters that aren't specified in generateStaticParams.
- * This allows the application to handle any job ID at runtime, even if
- * they're not explicitly listed above.
+ * In a static export, dynamicParams must be set to false.
+ * This tells Next.js to only pre-render the paths returned by generateStaticParams.
+ * Any other paths will show a 404 page.
  */
-export const dynamicParams = true;
+export const dynamicParams = false;
 
 /**
  * The main page component for displaying details of a specific audio recording.
  * This component receives the dynamic route parameter (id) and passes it to
  * the client component that handles the data fetching and rendering.
+ * 
+ * Since this is a static export, the actual data fetching happens client-side
+ * after the page loads.
  */
 export default function Page({ params }: { params: { id: string } }) {
   return <RecordingDetailsPageWrapper id={params.id} />;
