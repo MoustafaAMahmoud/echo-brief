@@ -211,8 +211,8 @@ Azure OpenAI services is where you deploy an LLM model e.g. GPT4o-mini that will
 ![alt text](images/image-20.png)
 
 
-1. Click next, configure Networking as you require.
-2. Add any Tags you may require, then review and create the resource.
+4. Click next, configure Networking as you require.
+5. Add any Tags you may require, then review and create the resource.
 
 ## Deploying the Speech Service
 
@@ -225,9 +225,9 @@ The Speech Service offers speech-to-text, text-to-speech, and speech translation
 ![alt text](images/image-21.png)
 ![alt text](images/image-22.png)
 
-1. Click next, configure Networking as you require.
-2. Click next, under Identity enable ** `System assigned identity` **.
-3. Add any Tags you may require, then review and create the resource.
+4. Click next, configure Networking as you require.
+5. Click next, under Identity enable ** `System assigned identity` **.
+6. Add any Tags you may require, then review and create the resource.
 
 ## Resource Permissions
 
@@ -330,7 +330,7 @@ az cosmosdb sql role assignment create --account-name **<cosmosaccountname>** --
 
 *az cosmosdb sql role assignment create --resource-group* ***<*resourcegroupname*>*** *--account-name* ***<*cosmosaccountname*>*** *--role-definition-id "00000000-0000-0000-0000-000000000002" --principal-id* ***<web app Principle ID>*** *--scope "/subscriptions/****<subscriptionID>****/resourceGroups/****<*resourcegroupname*>****/providers/Microsoft.DocumentDB/databaseAccounts/****<*cosmosaccountname*>****"*
 
-1. Run the following Azure CLI command to add Cosmos DB Data Reader role.
+2. Run the following Azure CLI command to add Cosmos DB Data Reader role.
 
 *az cosmosdb sql role assignment create --resource-group* ***<*resourcegroupname*>*** *--account-name* ***<*cosmosaccountname*>*** *--role-definition-id "00000000-0000-0000-0000-000000000001" --principal-id* ***<web app Principle ID>*** *--scope "/subscriptions/****<subscriptionID>****/resourceGroups/****<*resourcegroupname*>****/providers/Microsoft.DocumentDB/databaseAccounts/****<*cosmosaccountname*>****"*
 
@@ -348,8 +348,8 @@ This section covers the deployment of the Azure OpenAI GPT model that will be us
 
 ![alt text](images/image-38.png)
 
-1. Under Deployments, click Deploy a model and then Deploy a Base Model. Select your chosen GPT model and click confirm. Select your preferred deployment options and click create resource and deploy.
-2. Once created take note of the api version, which can be found at the end of the Target URL. This can be found under the endpoint heading. “https://<Servicename>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-10-21”
+2. Under Deployments, click Deploy a model and then Deploy a Base Model. Select your chosen GPT model and click confirm. Select your preferred deployment options and click create resource and deploy.
+3. Once created take note of the api version, which can be found at the end of the Target URL. This can be found under the endpoint heading. “https://<Servicename>.openai.azure.com/openai/deployments/<deployment>/chat/completions?api-version=2024-10-21”
 
 *NB: When testing the content filters on the GPT deployment may affect your results. You may need to request access to change the inbuilt content filters from Microsoft directly, which can be configured in the Azure AI Foundry portal.*
 
@@ -427,7 +427,7 @@ This section covers the deployment of the Azure OpenAI GPT model that will be us
 }
 ```
 
-1. Create the indexing policy for the voice\_jobs container. On this container, under settings, click ‘Indexing Policy’ and paste in the following code and click save.
+6. Create the indexing policy for the voice\_jobs container. On this container, under settings, click ‘Indexing Policy’ and paste in the following code and click save.
 
 ![alt text](images/image-47.png)
 ```json
@@ -493,7 +493,7 @@ This section covers the deployment of the Azure OpenAI GPT model that will be us
 ```
 #### Creating Indexing Polices
 
-1. Create the indexing policy for the voice\_prompts container. On this container, under settings, click ‘Indexing Policy’ and paste in the following code and click save.
+7. Create the indexing policy for the voice\_prompts container. On this container, under settings, click ‘Indexing Policy’ and paste in the following code and click save.
 
 ![alt text](images/image-48.png)
 ```json
@@ -553,12 +553,12 @@ This section covers the deployment of the Azure OpenAI GPT model that will be us
 
 ![alt text](images/image-51.png)
 
-1. Press ok and then apply.
-2. Navigate to Configuration and add the following startup command, click save and then continue.
+3. Press ok and then apply.
+4. Navigate to Configuration and add the following startup command, click save and then continue.
 ```sh
 python3 -m gunicorn -w 2 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000 --reload --log-level debug
 ```
-1. Now Navigate to CORS, in Allowed Origins, add \* then click save.
+5. Now Navigate to CORS, in Allowed Origins, add \* then click save.
 
 ## Configuring the Function App
 
@@ -569,7 +569,7 @@ python3 -m gunicorn -w 2 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.
 
 Note, the Azure\_Speech\_Deployment is the name of the custom endpoint chosen for the speech service defined earlier. You can find this on the speech service under Endpoint, found after https:// and before .cognitiveservices.
 
-1. After adding the environment variables go to CORS in Allowed Origins, add \* then click save.
+3. After adding the environment variables go to CORS in Allowed Origins, add \* then click save.
 
 # Configuring & Deploying the Static Web App
 
@@ -598,27 +598,21 @@ if you get “Failure Reason: Could not load StaticSitesClient metadata from rem
 
 **tar -a -c -f ../output.zip \***
 
-1. then change directory to \echo-brief and then run this Azure CLI deployment command to deploy the Function App.
+2. then change directory to \echo-brief and then run this Azure CLI deployment command to deploy the Function App.
 
 **az functionapp deployment source config-zip --subscription <subscriptionID>  --resource-group <resourcegroupname> --name <functionappname> --src output.zip --build-remote true**
 
-1. Navigate to the Function app in the Azure Portal, on the overview page you should see the function “blob\_trigger”
+3. Navigate to the Function app in the Azure Portal, on the overview page you should see the function “blob\_trigger”
 
 ![alt text](images/image-54.png)
 
 # Deploying the Backend App
 
-1. Open config.py in \echo-brief\backend\_app\app\core, under the section “Class AppConfig” change ‘“database”:’ to your cosmos database name. (Not the account name)
-
-![alt text](images/image-55.png)
-![alt text](images/image-56.png)
-
-
 1. Open Command prompt and change directory to \echo-brief\backend\_app and run this command to create a zip file.
 
 **tar -a -c -f ../backend.zip app requirements.txt**
 
-1. change directory to \echo-brief\ and then run the following command to deploy the backend code to the web app.
+2. change directory to \echo-brief\ and then run the following command to deploy the backend code to the web app.
 
 ***az webapp deployment source config-zip --resource-group <resource-group-name> --name <web-app-name> --src backend.zip***
 
@@ -632,7 +626,7 @@ Once deployed you should get a site started successfully message.
 
 ![alt text](images/image-58.png)
 
-1. Edit the prompts.sh file downloaded as part of the repo. Fill in the details (backend url, username and password.) Right click an empty space in the folder where prompts.sh is and click “open git bash here”. Then run “./prompts.sh”.
+2. Edit the prompts.sh file downloaded as part of the repo. Fill in the details (backend url, username and password.) Right click an empty space in the folder where prompts.sh is and click “open git bash here”. Then run “./prompts.sh”.
 
 ![alt text](images/image-59.png)
 
