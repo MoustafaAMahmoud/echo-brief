@@ -1,11 +1,12 @@
-// create .env.local file and add the following vars, it should be in the root of the project and it should be ignored by git:
-export const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { BACKEND_API } from "../config-global";
+// // create .env.local file and add the following vars, it should be in the root of the project and it should be ignored by git:
+// export const BACKEND_API = import.meta.env.VITE_BACKEND_API;
 
-export const REGISTER_API = `${BASE_URL}/register`;
-export const UPLOAD_API = `${BASE_URL}/upload`;
-export const JOBS_API = `${BASE_URL}/jobs`;
-export const LOGIN_API = `${BASE_URL}/login`;
-export const CATEGORIES_API = `${BASE_URL}/categories`;
-export const SUBCATEGORIES_API = `${BASE_URL}/subcategories`;
-export const PROMPTS_API = `${BASE_URL}/retrieve_prompts`;
-export const TRANSCRIPTION_API = `${BASE_URL}/jobs/transcription`;
+export const REGISTER_API = `${BACKEND_API}/register`;
+export const UPLOAD_API = `${BACKEND_API}/upload`;
+export const JOBS_API = `${BACKEND_API}/jobs`;
+export const LOGIN_API = `${BACKEND_API}/login`;
+export const CATEGORIES_API = `${BACKEND_API}/categories`;
+export const SUBCATEGORIES_API = `${BACKEND_API}/subcategories`;
+export const PROMPTS_API = `${BACKEND_API}/retrieve_prompts`;
+export const TRANSCRIPTION_API = `${BACKEND_API}/jobs/transcription`;
