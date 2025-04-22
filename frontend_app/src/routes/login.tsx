@@ -1,9 +1,10 @@
 import { AuthForm } from "@/components/auth-form";
+import { getStorageItem } from "@/lib/storage";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: () => {
-    const token = localStorage.getItem("token");
+    const token = getStorageItem("token", "");
     if (token) {
       return redirect({ to: "/audio-upload" });
     }

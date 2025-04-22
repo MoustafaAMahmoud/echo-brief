@@ -1,8 +1,8 @@
+import type { VariantProps } from "class-variance-authority";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
-import type { VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
 
 const notificationVariants = cva(
   "fixed top-4 left-1/2 flex w-full max-w-sm -translate-x-1/2 transform items-center justify-between rounded-lg p-4 text-white shadow-lg",

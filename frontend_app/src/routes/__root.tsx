@@ -1,9 +1,10 @@
-import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import TanstackQueryLayout from "../integrations/tanstack-query/layout";
-import type { QueryClient } from "@tanstack/react-query";
-import { ThemeProvider } from "@/components/theme-provider";
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -19,6 +20,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         disableTransitionOnChange
       >
         <Outlet />
+        <Toaster />
       </ThemeProvider>
       <TanStackRouterDevtools />
 

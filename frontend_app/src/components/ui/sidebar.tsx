@@ -95,7 +95,7 @@ SidebarMenuItem.displayName = "SidebarMenuItem";
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean }
->(({ className, asChild, children, ...props }, ref) => {
+>(({ className, asChild, children, ...props }) => {
   const Comp = asChild ? "span" : "button";
   return (
     <Comp

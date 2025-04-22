@@ -1,161 +1,164 @@
- 
+import type { CategoryResponse } from "@/api/prompt-management";
+import type { SubcategoryFormValues } from "@/schema/prompt-management.schema";
+import { useEffect } from "react";
+import { createSubcategory } from "@/api/prompt-management";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useOptimisticMutation } from "@/hooks/use-optimistic-mutation";
+import { getPromptManagementSubcategoriesQuery } from "@/queries/prompt-management.query";
+import { subcategoryFormSchema } from "@/schema/prompt-management.schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
-import { useEffect, useState } from "react"
-import { MarkdownEditor } from "./markdown-editor"
-import type { Category } from "./prompt-management-context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MarkdownEditor } from "./markdown-editor";
 
 interface SubcategoryFormProps {
-    categories: Array<Category>
-    selectedCategoryId?: string
-    onSubmit: (name: string, categoryId: string, prompts: Record<string, string>) => Promise<void>
-    onCancel: () => void
+  categories: Array<CategoryResponse>;
+  selectedCategoryId?: string;
+  closeDialog: () => void;
 }
 
-export function SubcategoryForm({ categories, selectedCategoryId, onSubmit, onCancel }: SubcategoryFormProps) {
-    const [name, setName] = useState("")
-    const [categoryId, setCategoryId] = useState(selectedCategoryId || "")
-    const [prompts, setPrompts] = useState<Record<string, string>>({})
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const { toast } = useToast()
-    const [savedPrompts, setSavedPrompts] = useState<Record<string, string>>({})
+export function SubcategoryForm({
+  categories,
+  selectedCategoryId,
+  closeDialog,
+}: SubcategoryFormProps) {
+  const form = useForm<SubcategoryFormValues>({
+    resolver: zodResolver(subcategoryFormSchema),
+    defaultValues: {
+      name: "",
+      categoryId: selectedCategoryId || undefined,
+      prompts: {},
+    },
+  });
 
-    useEffect(() => {
-        if (selectedCategoryId) {
-            console.log("SubcategoryForm received selectedCategoryId:", selectedCategoryId)
-            setCategoryId(selectedCategoryId)
-        }
-    }, [selectedCategoryId])
-
-    const handlePromptsUpdate = (updatedPrompts: Record<string, string>) => {
-        console.log("Received prompts update:", updatedPrompts)
-        setSavedPrompts(updatedPrompts)
-        setPrompts(updatedPrompts)
+  useEffect(() => {
+    if (selectedCategoryId) {
+      form.setValue("categoryId", selectedCategoryId);
     }
+  }, [selectedCategoryId, form]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        console.log("Submitting subcategory with name:", name)
-        console.log("Using category ID:", categoryId)
-        console.log("Final prompts to submit:", savedPrompts)
+  const { mutate: addSubcategoryMutation, isPending } = useOptimisticMutation({
+    mutationFn: createSubcategory,
+    queryKey: getPromptManagementSubcategoriesQuery().queryKey,
+    updateFn: (old = [], newData) => [...old, newData],
+    successMessage: "Subcategory created successfully",
+    onMutateSideEffect: () => {
+      form.reset();
+      closeDialog();
+    },
+  });
 
-        if (!name.trim()) {
-            toast({
-                title: "Error",
-                description: "Subcategory name cannot be empty",
-                variant: "destructive",
-            })
-            return
-        }
+  const handleFormSubmit = async (values: SubcategoryFormValues) => {
+    const formattedPrompts = Object.fromEntries(
+      Object.entries(values.prompts)
+        .map(([key, value]) => [key.trim(), value.trim()])
+        .filter(([key]) => key),
+    );
 
-        if (!categoryId) {
-            toast({
-                title: "Error",
-                description: "Please select a category",
-                variant: "destructive",
-            })
-            return
-        }
+    addSubcategoryMutation({
+      name: values.name,
+      categoryId: values.categoryId,
+      prompts: formattedPrompts,
+    });
+  };
 
-        // Ensure we have at least one prompt with a key
-        const validPrompts = Object.entries(savedPrompts).filter(([key]) => key.trim())
-        if (validPrompts.length === 0) {
-            toast({
-                title: "Error",
-                description: "Please add at least one prompt with a key",
-                variant: "destructive",
-            })
-            return
-        }
+  const promptsValue = form.watch("prompts");
+  const hasValidPrompts =
+    Object.entries(promptsValue ?? {}).filter(([key]) => key.trim()).length > 0;
 
-        setIsSubmitting(true)
-        try {
-            // Convert the prompts to the correct format
-            const formattedPrompts = Object.fromEntries(
-                validPrompts.map(([key, value]) => [key.trim(), value.trim()])
-            )
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        className="space-y-6"
+      >
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem key="subcategory-name">
+              <FormLabel>Subcategory Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter subcategory name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            console.log("Submitting with formatted prompts:", formattedPrompts)
-            await onSubmit(name, categoryId, formattedPrompts)
+        <FormField
+          control={form.control}
+          name="categoryId"
+          render={({ field }) => (
+            <FormItem key="category-select">
+              <FormLabel>Category</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                defaultValue={field.value}
+                disabled={!!selectedCategoryId}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            // Reset form after successful submission
-            setName("")
-            setSavedPrompts({})
-            setPrompts({})
-        } catch (error) {
-            console.error("Error submitting subcategory:", error)
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to create subcategory",
-                variant: "destructive",
-            })
-        } finally {
-            setIsSubmitting(false)
-        }
-    }
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div key="subcategory-name" className="space-y-2">
-                <Label htmlFor="name">Subcategory Name</Label>
-                <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter subcategory name"
-                    required
-                />
-            </div>
-
-            <div key="category-select" className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select
-                    value={categoryId}
-                    onValueChange={setCategoryId}
-                    disabled={!!selectedCategoryId}
-                    required
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {categories.map((category) => (
-                            <SelectItem
-                                key={category.category_id || category.id || ""}
-                                value={category.category_id || category.id || ""}
-                            >
-                                {category.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            <div key="prompts-editor" className="space-y-2">
-                <Label>Prompts</Label>
+        <FormField
+          control={form.control}
+          name="prompts"
+          render={({ field }) => (
+            <FormItem key="prompts-editor">
+              <Label>Prompts</Label>
+              <FormControl>
                 <MarkdownEditor
-                    initialPrompts={prompts}
-                    onSave={handlePromptsUpdate}
-                    hideActionButtons={true}
+                  value={field.value || {}}
+                  onChange={(updatedPrompts) => field.onChange(updatedPrompts)}
                 />
-            </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <div key="action-buttons" className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={onCancel}>
-                    Cancel
-                </Button>
-                <Button
-                    type="submit"
-                    disabled={isSubmitting || Object.keys(savedPrompts).length === 0}
-                >
-                    {isSubmitting ? "Creating..." : "Create Subcategory"}
-                </Button>
-            </div>
-        </form>
-    )
+        <div key="action-buttons" className="flex justify-end space-x-2">
+          <Button type="button" variant="outline" onClick={closeDialog}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending || !hasValidPrompts}>
+            {isPending ? "Creating..." : "Create Subcategory"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
 }
-

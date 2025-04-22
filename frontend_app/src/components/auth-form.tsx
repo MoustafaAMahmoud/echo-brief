@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Callout, Theme } from "@radix-ui/themes";
 import { useRouter } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 
 import "@radix-ui/themes/styles.css";
 
-import { Loader2 } from "lucide-react";
+import type { LoginValues, RegisterValues } from "@/schema/auth.schema";
+import { loginUser, registerUser } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -19,38 +18,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { loginUser, registerUser } from "@/lib/api";
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters" }),
-});
-
-const registerSchema = z
-  .object({
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type LoginValues = z.infer<typeof loginSchema>;
-type RegisterValues = z.infer<typeof registerSchema>;
+import { setStorageItem } from "@/lib/storage";
+import { loginSchema, registerSchema } from "@/schema/auth.schema";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function AuthForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [notification, setNotification] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const router = useRouter();
 
   const loginForm = useForm<LoginValues>({
@@ -70,95 +45,53 @@ export function AuthForm() {
     },
   });
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.navigate({ to: "/audio-upload" });
-    }
-  }, [isAuthenticated, router]);
-
-  // Automatically dismiss the notification after 5 seconds
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 5000); // 5 seconds
-
-      return () => clearTimeout(timer); // Clear the timer if the component unmounts
-    }
-  }, [notification]);
+  const { mutateAsync: loginMutation, isPending: isLoginPending } = useMutation(
+    {
+      mutationKey: ["user/login"],
+      mutationFn: async (values: LoginValues) =>
+        await loginUser(values.email, values.password),
+      onSuccess: (data) => {
+        toast.success(data.message);
+        setStorageItem("token", data.access_token);
+        router.navigate({ to: "/audio-upload" });
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : "Login failed");
+      },
+    },
+  );
 
   async function onLoginSubmit(values: LoginValues) {
-    setIsLoading(true);
-    try {
-      const result = await loginUser(values.email, values.password);
-      if (result.status === 401) {
-        throw new Error(result.message || "Invalid credentials");
-      }
-      if (!result.access_token) {
-        throw new Error("No access token received");
-      }
-      localStorage.setItem("token", result.access_token);
-      setIsAuthenticated(true);
-      setNotification({ type: "success", message: "Login successful" });
-      router.navigate({ to: "/audio-upload" });
-    } catch (error) {
-      setNotification({
-        type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Login failed. Please check your credentials and try again.",
-      });
-      setIsAuthenticated(false);
-      localStorage.removeItem("token");
-    } finally {
-      setIsLoading(false);
-    }
+    await loginMutation(values);
   }
 
+  const { mutateAsync: registerMutation, isPending: isRegisterPending } =
+    useMutation({
+      mutationKey: ["user/register"],
+      mutationFn: async (values: RegisterValues) =>
+        await registerUser(values.email, values.password),
+      onSuccess: (data) => {
+        toast.success(data.message);
+        setActiveTab("login");
+      },
+      onError: (error) => {
+        toast.error(
+          error instanceof Error ? error.message : "Registration failed",
+        );
+      },
+    });
+
   async function onRegisterSubmit(values: RegisterValues) {
-    setIsLoading(true);
-    try {
-      const result = await registerUser(values.email, values.password);
-
-      if (result.status === 400) {
-        throw new Error(result.message || "Email already registered");
-      }
-
-      setNotification({ type: "success", message: result.message });
-      // Automatically log in after successful registration
-      const loginResult = await loginUser(values.email, values.password);
-      localStorage.setItem("token", loginResult.access_token);
-      setIsAuthenticated(true);
-      router.navigate({ to: "/audio-upload" });
-    } catch (error) {
-      setNotification({
-        type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "An error occurred during registration. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await registerMutation(values);
   }
 
   return (
     <div className="space-y-6">
-      {notification && (
-        <div>
-          <Theme>
-            <Callout.Root
-              color={notification.type === "success" ? "green" : "red"}
-            >
-              <Callout.Text>{notification.message}</Callout.Text>
-            </Callout.Root>
-          </Theme>
-        </div>
-      )}
-
-      <Tabs defaultValue="login" className="w-full">
+      <Tabs
+        className="w-full"
+        onValueChange={(value) => setActiveTab(value as "login" | "register")}
+        value={activeTab}
+      >
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Login</TabsTrigger>
           <TabsTrigger value="register">Register</TabsTrigger>
@@ -199,8 +132,12 @@ export function AuthForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoginPending || isRegisterPending}
+              >
+                {isLoginPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Logging in...
@@ -265,8 +202,12 @@ export function AuthForm() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isRegisterPending}
+              >
+                {isRegisterPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Registering...

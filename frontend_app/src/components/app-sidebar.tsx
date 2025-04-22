@@ -1,9 +1,17 @@
 import type { LinkOptions } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { getStorageItem, setStorageItem } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { Link, useRouter } from "@tanstack/react-router";
-import { FileAudio, FileText, LogOut, Mic } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileAudio,
+  FileText,
+  LogOut,
+  Mic,
+} from "lucide-react";
 
 interface MenuItem {
   icon: React.ElementType;
@@ -11,7 +19,7 @@ interface MenuItem {
   to: LinkOptions["to"];
 }
 
-const menuItems: MenuItem[] = [
+const menuItems: Array<MenuItem> = [
   { icon: Mic, label: "Audio Upload", to: "/audio-upload" },
   { icon: FileAudio, label: "Audio Recordings", to: "/audio-recordings" },
   { icon: FileText, label: "Prompt Management", to: "/prompt-management" },
@@ -22,8 +30,18 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ children }: AppSidebarProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    const saved = getStorageItem("sidebarOpen", "true");
+    return JSON.parse(saved);
+  });
+
   const router = useRouter();
+
+  const toggleSidebar = () => {
+    const newState = !isOpen;
+    setIsOpen(newState);
+    setStorageItem("sidebarOpen", JSON.stringify(newState));
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -41,9 +59,9 @@ export function AppSidebar({ children }: AppSidebarProps) {
         <Button
           variant="ghost"
           className="absolute top-4 -right-4 z-50 h-8 w-8 rounded-full bg-gray-800 p-0 hover:bg-gray-700"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={toggleSidebar}
         >
-          {isOpen ? "<" : ">"}
+          {isOpen ? <ChevronLeft /> : <ChevronRight />}
         </Button>
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center justify-center">

@@ -1,11 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
+import type { AudioRecording } from "@/api/audio-recordings";
 import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TRANSCRIPTION_API } from "@/lib/apiConstants";
+import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { cn } from "@/lib/utils";
-import { useRouter } from "@tanstack/react-router";
+import { getAudioTranscriptionQuery } from "@/queries/audio-recordings.query";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Calendar,
@@ -20,8 +31,6 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-
-import type { AudioRecording } from "./audio-recordings-context";
 
 interface ExtendedAudioRecording extends AudioRecording {
   analysis_text?: string;
@@ -48,144 +57,53 @@ const statusStyles: Record<string, string> = {
 };
 
 export function RecordingDetailsPage({ recording }: RecordingDetailsPageProps) {
-  const router = useRouter();
-  const [transcriptionText, setTranscriptionText] = useState<string | null>(
-    null,
+  const { data: transcriptionText, refetch: refetchTranscription } = useQuery(
+    getAudioTranscriptionQuery(recording.id),
   );
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(75);
 
-  // Create a ref for the audio element
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  useEffect(() => {
-    // We're not auto-loading the transcription anymore
-    // If you want to keep this for some reason, update the error message:
-    /*
-    if (!recording.transcription_file_path) return;
-    fetch(recording.transcription_file_path)
-      .then((response) => response.text())
-      .then((text) => setTranscriptionText(text))
-      .catch(() => {
-        // Don't set any error message, just log it
-        console.error("Failed to load transcription from file path");
-      });
-    */
-  }, [recording.transcription_file_path]);
-
-  // Set up audio event listeners
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, []);
-
-  // Handle play/pause
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.play().catch((error) => {
-        console.error("Error playing audio:", error);
-        setIsPlaying(false);
-      });
-    } else {
-      audio.pause();
-    }
-  }, [isPlaying]);
-
-  // Handle mute/unmute
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.muted = isMuted;
-  }, [isMuted]);
-
-  // Handle volume change
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.volume = volume / 100;
-  }, [volume]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
-
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleMuteToggle = () => {
-    setIsMuted(!isMuted);
-  };
-
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = Number(e.target.value);
-    setCurrentTime(newTime);
-
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = Number(e.target.value);
-    setVolume(newVolume);
-  };
-
-  const handleGoBack = () => {
-    router.history.back();
-  };
+  const {
+    audioRef,
+    isPlaying,
+    isMuted,
+    currentTime,
+    duration,
+    displayVolume,
+    togglePlayPause,
+    toggleMute,
+    handleTimeSliderChange,
+    handleVolumeSliderChange,
+    formattedCurrentTime,
+    formattedDuration,
+  } = useAudioPlayer(recording.file_path);
 
   return (
     <div className="relative container mx-auto px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={handleGoBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          <Link to="/audio-recordings">
+            <Button
+              variant="outline"
+              size="icon"
+              className="hover:cursor-pointer"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
           <div>
             <h1 className="text-3xl font-bold">Audio Recording Details</h1>
-            <div className="text-muted-foreground flex items-center gap-1 text-sm">
-              <span
-                className="cursor-pointer hover:underline"
-                onClick={handleGoBack}
-              >
-                Recordings
-              </span>
-              <span>/</span>
-              <span>{recording.id}</span>
-            </div>
+            <Breadcrumb className="text-muted-foreground text-sm">
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link to="/audio-recordings">Recordings</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{recording.id}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </div>
       </div>
@@ -202,7 +120,6 @@ export function RecordingDetailsPage({ recording }: RecordingDetailsPageProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Hidden audio element that we control programmatically */}
               <audio
                 ref={audioRef}
                 src={recording.file_path}
@@ -213,50 +130,43 @@ export function RecordingDetailsPage({ recording }: RecordingDetailsPageProps) {
               <div className="bg-secondary/30 mb-4 rounded-lg p-4">
                 <div className="mb-3 flex items-center gap-4">
                   <Button
-                    variant="ghost"
                     size="icon"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-10 rounded-full"
-                    onClick={handlePlayPause}
+                    className="bg-primary text-primary-foreground hover:bg-primary/80 h-10 w-10 rounded-full"
+                    onClick={togglePlayPause}
                   >
                     {isPlaying ? (
-                      <Pause className="h-5 w-5" />
+                      <Pause className="size-5" />
                     ) : (
-                      <Play className="h-5 w-5" />
+                      <Play className="size-5" />
                     )}
                   </Button>
 
                   <div className="flex flex-1 items-center gap-3">
-                    <span className="text-sm">{formatTime(currentTime)}</span>
-                    <input
-                      type="range"
-                      min="0"
+                    <span className="text-sm">{formattedCurrentTime}</span>
+                    <Slider
+                      value={[currentTime]}
                       max={duration || 100}
-                      value={currentTime}
-                      onChange={handleTimeChange}
-                      className="bg-secondary h-2 flex-1 cursor-pointer appearance-none rounded-lg"
+                      step={1}
+                      className="flex-1 cursor-pointer"
+                      onValueChange={handleTimeSliderChange}
                     />
-                    <span className="text-sm">{formatTime(duration || 0)}</span>
+                    <span className="text-sm">{formattedDuration}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleMuteToggle}
-                    >
+                    <Button variant="ghost" size="icon" onClick={toggleMute}>
                       {isMuted ? (
-                        <VolumeX className="h-5 w-5" />
+                        <VolumeX className="size-5" />
                       ) : (
-                        <Volume2 className="h-5 w-5" />
+                        <Volume2 className="size-5" />
                       )}
                     </Button>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={volume}
-                      onChange={handleVolumeChange}
-                      className="bg-secondary h-2 w-20 cursor-pointer appearance-none rounded-lg"
+                    <Slider
+                      value={[displayVolume]}
+                      max={100}
+                      step={1}
+                      className="w-20 cursor-pointer"
+                      onValueChange={handleVolumeSliderChange}
                     />
                   </div>
                 </div>
@@ -397,68 +307,7 @@ export function RecordingDetailsPage({ recording }: RecordingDetailsPageProps) {
                           below to load the transcription.
                         </p>
                         <Button
-                          onClick={async () => {
-                            try {
-                              const token = localStorage.getItem("token");
-                              if (!token) {
-                                throw new Error(
-                                  "No authentication token found",
-                                );
-                              }
-
-                              const response = await fetch(
-                                `${TRANSCRIPTION_API}/${recording.id}`,
-                                {
-                                  method: "GET",
-                                  headers: {
-                                    Authorization: `Bearer ${token}`,
-                                  },
-                                },
-                              );
-
-                              if (!response.ok) {
-                                throw new Error(
-                                  `HTTP error! Status: ${response.status}`,
-                                );
-                              }
-
-                              const text = await response.text();
-
-                              if (text && text.length > 0) {
-                                setTranscriptionText(text);
-                              } else {
-                                throw new Error("Received empty transcription");
-                              }
-                            } catch (error) {
-                              console.error(
-                                "Error loading transcription:",
-                                error,
-                              );
-
-                              if (error instanceof Error) {
-                                if (error.message.includes("404")) {
-                                  setTranscriptionText(
-                                    "Transcription not found for this recording.",
-                                  );
-                                } else if (
-                                  error.message.includes("401") ||
-                                  error.message.includes("403")
-                                ) {
-                                  setTranscriptionText(
-                                    "Not authorized to access this transcription.",
-                                  );
-                                } else {
-                                  setTranscriptionText(
-                                    "Unable to load transcription. Please try again later.",
-                                  );
-                                }
-                              } else {
-                                setTranscriptionText(
-                                  "Unable to load transcription. Please try again later.",
-                                );
-                              }
-                            }
-                          }}
+                          onClick={() => refetchTranscription()}
                           className="px-8"
                         >
                           Load Transcription
@@ -481,7 +330,7 @@ export function RecordingDetailsPage({ recording }: RecordingDetailsPageProps) {
                         className="w-full max-w-md rounded-lg font-semibold shadow-md"
                         disabled={!recording.transcription_file_path}
                       >
-                        <Download className="mr-2 h-4 w-4" />
+                        <Download className="me-2 h-4 w-4" />
                         Download Transcription TXT
                       </Button>
                     </div>
@@ -536,7 +385,7 @@ export function RecordingDetailsPage({ recording }: RecordingDetailsPageProps) {
                         className="mt-2 w-full rounded-lg font-semibold shadow-md"
                         disabled={!recording.analysis_file_path}
                       >
-                        <Download className="mr-2 h-4 w-4" />
+                        <Download className="me-2 h-4 w-4" />
                         Download Analysis PDF
                       </Button>
                     </>

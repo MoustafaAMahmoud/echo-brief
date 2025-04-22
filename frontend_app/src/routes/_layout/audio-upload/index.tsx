@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { AudioUploadForm } from "@/components/dashboard/audio-upload-form";
 import {
   Card,
@@ -7,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_layout/audio-upload/")({
   component: AudioUploadPage,

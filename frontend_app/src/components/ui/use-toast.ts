@@ -1,5 +1,5 @@
 // Simplified version for brevity
-import { useState } from "react"
+import { useState } from "react";
 
 interface Toast {
   id: number;
@@ -10,16 +10,15 @@ interface Toast {
 }
 
 export function useToast() {
-  const [toasts, setToasts] = useState<Array<Toast>>([])
+  const [toasts, setToasts] = useState<Array<Toast>>([]);
 
   return {
     toasts,
     toast: (props: Omit<Toast, "id">) => {
-      setToasts((prevToasts) => [...prevToasts, { id: Date.now(), ...props }])
+      setToasts((prevToasts) => [...prevToasts, { id: Date.now(), ...props }]);
     },
     dismiss: (id: number) => {
-      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id))
+      setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
     },
-  }
+  };
 }
-
