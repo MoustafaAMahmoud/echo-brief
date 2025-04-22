@@ -573,11 +573,7 @@ Note, the Azure\_Speech\_Deployment is the name of the custom endpoint chosen fo
 
 # Configuring & Deploying the Static Web App
 
-1. Open the file apiConstants.ts (Found in \echo-brief\frontend\_app\lib)
-2. Edit “export const BASE\_NAME =” to the base url of your webapp backend.
-3. Open CMD and change directory to \echo-brief\frontend\_app
-4. Run “npm install --legacy-peer-deps”
-5. Then run “npm run build”
+1. Open CMD and change directory to \echo-brief\infra\frontend\_app
 
 Access the Azure portal and navigate to your Static Web App service and copy the deployment token.
 
@@ -585,9 +581,9 @@ Access the Azure portal and navigate to your Static Web App service and copy the
 
 In the same command prompt run this command.
 ```sh
-swa deploy ./out --env=production --deployment-token=**<deployment token>**
+swa deploy ./frontend_app/ --env=production --deployment-token=**<deployment token>**
 ```
-
+![alt text](image-1.png)
 if you get “Failure Reason: Could not load StaticSitesClient metadata from remote. Please check your internet connection.” Your firewall may be blocking access to the Azure static Web app CLI.
 
 # Deploying the Function App
@@ -620,7 +616,11 @@ Once deployed you should get a site started successfully message.
 
 ![alt text](images/image-57.png)
 
-# Adding Prompts for Transcription Summary
+# Adding Prompts for Transcription Summary (Optional as you can add this in the UI)
+
+1. UI Options
+
+![alt text](image-2.png)
 
 1. Navigate to the transcription services frontend and register an account. This can be found on the overview page on the Static WebApp.
 
