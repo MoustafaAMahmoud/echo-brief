@@ -573,7 +573,17 @@ Note, the Azure\_Speech\_Deployment is the name of the custom endpoint chosen fo
 
 # Configuring & Deploying the Static Web App
 
-1. Open CMD and change directory to \echo-brief\infra\frontend\_app
+1. Configure environment variable for static web app. 
+```json
+[
+  {
+    "name": "VITE_BASE_URL",
+    "value": "https://backend_url.azurewebsites.net"
+  }
+]
+```
+![alt text](image-3.png)
+2. Open CMD and change directory to \echo-brief\infra\frontend\_app
 
 Access the Azure portal and navigate to your Static Web App service and copy the deployment token.
 
